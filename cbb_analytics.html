@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2025-26 CBB Analytics</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f1117;color:#e8e8e8;min-height:100vh}
+#loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:16px}
+.spinner{width:48px;height:48px;border:4px solid #333;border-top-color:#4f8ef7;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loadMsg{font-size:15px;color:#aaa;text-align:center;max-width:360px}
+#loadPct{font-size:28px;font-weight:700;color:#4f8ef7}
+#app{display:none;max-width:1200px;margin:0 auto;padding:16px}
+header{text-align:center;padding:24px 0 8px}
+header h1{font-size:24px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+header p{font-size:13px;color:#666;margin-top:4px}
+.tabs{display:flex;gap:4px;border-bottom:2px solid #222;margin:20px 0 0}
+.tab-btn{padding:10px 20px;background:none;border:none;color:#888;font-size:14px;font-weight:600;cursor:pointer;border-radius:6px 6px 0 0;transition:all 0.15s}
+.tab-btn.active{background:#1e2230;color:#4f8ef7;border-bottom:2px solid #4f8ef7;margin-bottom:-2px}
+.tab-btn:hover:not(.active){color:#ccc;background:#1a1d27}
+.tab-pane{display:none;padding:20px 0}
+.tab-pane.active{display:block}
+.controls{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+input[type=text]{background:#1e2230;border:1px solid #333;color:#e8e8e8;padding:8px 12px;border-radius:6px;font-size:13px;width:220px}
+input[type=text]::placeholder{color:#555}
+select{background:#1e2230;border:1px solid #333;color:#e8e8e8;padding:8px 12px;border-radius:6px;font-size:13px;cursor:pointer}
+label{font-size:13px;color:#888}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:#1a1d27;padding:9px 12px;text-align:left;font-weight:700;color:#aaa;position:sticky;top:0;cursor:pointer;user-select:none;white-space:nowrap}
+thead th:hover{color:#fff}
+thead th.sorted{color:#4f8ef7}
+thead th .sort-icon{margin-left:4px;opacity:0.5}
+thead th.sorted .sort-icon{opacity:1}
+tbody tr{border-bottom:1px solid #1a1d27;transition:background 0.1s}
+tbody tr:hover{background:#1e2230}
+tbody td{padding:8px 12px;vertical-align:middle}
+.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-weight:700;font-size:12px;background:#1e2230;color:#888}
+.rank-badge.top3{background:#f59e0b22;color:#f59e0b}
+.rank-badge.top10{background:#4f8ef722;color:#4f8ef7}
+.team-name{font-weight:600;color:#fff}
+.conf-badge{font-size:11px;color:#666;margin-left:6px}
+.bar-cell{width:120px}
+.bar-wrap{background:#1a1d27;border-radius:3px;height:8px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;background:#4f8ef7;transition:width 0.3s}
+.bar-fill.off{background:#22c55e}
+.bar-fill.def{background:#ef4444}
+.pos-num{color:#22c55e}
+.neg-num{color:#ef4444}
+/* Tab 2 */
+.predictor{background:#1a1d27;border-radius:12px;padding:24px;margin-bottom:24px}
+.predictor h2{font-size:18px;font-weight:700;margin-bottom:20px;color:#fff}
+.pred-row{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+.pred-field{display:flex;flex-direction:column;gap:6px}
+.pred-field label{font-size:12px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.pred-field select,.pred-field input{min-width:180px}
+.pred-btn{background:#4f8ef7;border:none;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s}
+.pred-btn:hover{background:#3a7de8}
+.result-box{background:#0f1117;border-radius:10px;padding:20px;margin-top:16px}
+.result-score{font-size:40px;font-weight:900;text-align:center;letter-spacing:-1px;color:#fff}
+.result-meta{text-align:center;color:#888;font-size:13px;margin-top:6px}
+.result-spread{font-size:16px;font-weight:700;text-align:center;margin-top:10px}
+.profiles{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+.profile-card{background:#1a1d27;border-radius:8px;padding:16px}
+.profile-card h3{font-size:14px;font-weight:700;margin-bottom:12px;color:#fff}
+.stat-row{display:flex;align-items:center;margin-bottom:8px;gap:8px}
+.stat-label{font-size:12px;color:#888;width:80px;flex-shrink:0}
+.stat-bar-wrap{flex:1;background:#0f1117;border-radius:3px;height:8px;overflow:hidden}
+.stat-bar-fill{height:100%;border-radius:3px;background:#4f8ef7}
+.stat-val{font-size:12px;color:#ccc;width:42px;text-align:right;flex-shrink:0}
+.off-def-split{display:flex;margin-top:12px;gap:8px}
+.split-pct{flex:1;text-align:center;padding:8px;border-radius:6px}
+.split-pct.off{background:#22c55e22;color:#22c55e}
+.split-pct.def{background:#ef444422;color:#ef4444}
+.split-pct .pct-num{font-size:22px;font-weight:800}
+.split-pct .pct-lbl{font-size:11px;opacity:0.8;margin-top:2px}
+.table-wrap{overflow-x:auto}
+.info-note{font-size:12px;color:#555;margin-top:8px}
+/* Team autocomplete */
+.ac-wrap{position:relative;min-width:200px}
+.ac-input{width:100%;background:#1e2230;border:1px solid #333;color:#e8e8e8;padding:9px 32px 9px 12px;border-radius:6px;font-size:13px;outline:none;transition:border-color 0.15s}
+.ac-input:focus{border-color:#4f8ef7}
+.ac-input.selected{border-color:#22c55e;color:#fff}
+.ac-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555;font-size:16px;cursor:pointer;line-height:1;padding:2px 4px;display:none}
+.ac-wrap.has-val .ac-clear{display:block}
+.ac-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#1e2230;border:1px solid #4f8ef7;border-radius:8px;max-height:240px;overflow-y:auto;z-index:999;box-shadow:0 8px 24px #00000066;display:none}
+.ac-dropdown.open{display:block}
+.ac-item{padding:9px 14px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ac-item:hover,.ac-item.focused{background:#2a2f42}
+.ac-item-name{color:#e8e8e8;font-weight:500}
+.ac-item-meta{color:#555;font-size:11px;white-space:nowrap}
+.ac-no-results{padding:12px 14px;color:#555;font-size:13px}
+/* Transfer Portal */
+.portal-hero{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.portal-stat-card{background:#1a1d27;border-radius:10px;padding:14px 20px;flex:1;min-width:110px;text-align:center}
+.portal-stat-card .val{font-size:28px;font-weight:800;color:#4f8ef7}
+.portal-stat-card .lbl{font-size:11px;color:#666;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.pm-pos{color:#22c55e;font-weight:700}
+.pm-neg{color:#ef4444;font-weight:700}
+.pm-zero{color:#888}
+.rating-stars{display:inline-flex;gap:1px}
+.star{width:10px;height:10px;background:#f59e0b;border-radius:1px;display:inline-block;opacity:.25}
+.star.on{opacity:1}
+.portal-note{font-size:12px;color:#444;background:#1a1d27;border-radius:6px;padding:10px 14px;margin-bottom:14px}
+.portal-note a{color:#4f8ef7;text-decoration:none}
+.portal-tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#4f8ef722;color:#4f8ef7;margin-left:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div id="loading">
+  <div class="spinner"></div>
+  <div id="loadMsg">Loading game data… this takes ~30 seconds</div>
+  <div id="loadPct">0%</div>
+</div>
+<div id="app">
+  <header>
+    <h1>🏀 2025-26 CBB Analytics</h1>
+    <p id="dataNote">Powered by live ESPN data · <span id="gameCount">–</span> games · <span id="teamCount">–</span> teams</p>
+  </header>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(1)">📊 Power Rankings</button>
+    <button class="tab-btn" onclick="switchTab(2)">🎯 Spread Predictor</button>
+    <button class="tab-btn" onclick="switchTab(3)">🔄 Transfer Portal</button>
+  </div>
+  <div id="tab1" class="tab-pane active">
+    <div class="controls">
+      <input type="text" id="srch" placeholder="Search team…" oninput="renderTable()">
+      <label>Conference: <select id="confFilter" onchange="renderTable()"><option value="">All</option></select></label>
+      <label>Show top: <select id="limitSel" onchange="renderTable()">
+        <option value="25">25</option><option value="50">50</option>
+        <option value="100">100</option><option value="0">All</option>
+      </select></label>
+    </div>
+    <div class="table-wrap">
+      <table id="rankTable">
+        <thead>
+          <tr>
+            <th onclick="sortBy('rank')">#<span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('name')">Team<span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('sosRating')" class="sorted">Rating<span class="sort-icon">↓</span></th>
+            <th onclick="sortBy('w')">W<span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('l')">L<span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('rawPts')">Pts/G<span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('rawAllowed')">Opp/G<span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('rawDiff')">+/-<span class="sort-icon">↕</span></th>
+            <th>Off%</th>
+            <th>Def%</th>
+            <th>Off Rating</th>
+            <th>Def Rating</th>
+          </tr>
+        </thead>
+        <tbody id="rankBody"></tbody>
+      </table>
+    </div>
+    <p class="info-note" style="margin-top:10px">Rating = SOS-adjusted score differential (150-iter Massey method, HCA=3.5pts, margin capped ±25). Off%/Def% show share of rating from offense vs defense.</p>
+  </div>
+  <div id="tab2" class="tab-pane">
+    <div class="predictor">
+      <h2>Game Spread Predictor</h2>
+      <div class="pred-row">
+        <div class="pred-field">
+          <label>Team A</label>
+          <div class="ac-wrap" id="acWrapA">
+            <input class="ac-input" id="acInputA" type="text" placeholder="Search team…" autocomplete="off">
+            <button class="ac-clear" id="acClearA" onclick="clearTeam('A')" title="Clear">✕</button>
+            <div class="ac-dropdown" id="acDropA"></div>
+          </div>
+        </div>
+        <div class="pred-field">
+          <label>Venue</label>
+          <select id="venue">
+            <option value="AH">Team A is Home</option>
+            <option value="BH">Team B is Home</option>
+            <option value="N" selected>Neutral Site</option>
+          </select>
+        </div>
+        <div class="pred-field">
+          <label>Team B</label>
+          <div class="ac-wrap" id="acWrapB">
+            <input class="ac-input" id="acInputB" type="text" placeholder="Search team…" autocomplete="off">
+            <button class="ac-clear" id="acClearB" onclick="clearTeam('B')" title="Clear">✕</button>
+            <div class="ac-dropdown" id="acDropB"></div>
+          </div>
+        </div>
+        <button class="pred-btn" onclick="predict()">Predict</button>
+      </div>
+      <div id="predResult"></div>
+    </div>
+    <div>
+      <div class="controls">
+        <input type="text" id="srch2" placeholder="Search team…" oninput="renderStatsTable()">
+        <label>Conference: <select id="confFilter2" onchange="renderStatsTable()"><option value="">All</option></select></label>
+        <label>Sort by: <select id="statSort" onchange="renderStatsTable()">
+          <option value="sosRating">Overall Rating</option>
+          <option value="adjPts">Adj Pts/G</option>
+          <option value="adjAllowed">Adj Opp/G</option>
+          <option value="adjFgPct">Adj FG%</option>
+          <option value="adjOppFgPct">Adj Opp FG%</option>
+          <option value="adjReb">Adj Reb/G</option>
+          <option value="adjTo">Adj TO/G</option>
+        </select></label>
+      </div>
+      <div class="table-wrap">
+        <table id="statsTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Team</th>
+              <th>Rating</th>
+              <th>Adj Pts/G</th>
+              <th>Adj Opp/G</th>
+              <th>Adj FG%</th>
+              <th>Adj Opp FG%</th>
+              <th>Adj Reb/G</th>
+              <th>Adj TO/G</th>
+              <th>Adj Ast/G</th>
+            </tr>
+          </thead>
+          <tbody id="statsBody"></tbody>
+        </table>
+      </div>
+      <p class="info-note" style="margin-top:10px">Competition-adjusted stats: each stat corrected for opponent quality. Adj Stat = Raw Stat + (LeagueAvg – OppAvg).</p>
+    </div>
+  </div>
+
+  <div id="tab3" class="tab-pane">
+    <div class="portal-note">
+      🔄 <b>2026 Transfer Portal</b> — Early entrants as of March 23, 2026. Portal officially opens April 7.
+      Players sourced via <a href="https://247sports.com/season/2026-basketball/transferportaltop/" target="_blank">247Sports</a>.
+      Per-game stats via ESPN · BPM via <a href="https://barttorvik.com" target="_blank">Barttorvik T-Rank</a>.
+    </div>
+    <div class="portal-hero" id="portalHero"></div>
+    <div class="controls">
+      <input type="text" id="srchPortal" placeholder="Search player or school…" oninput="renderPortalTable()">
+      <label>Position: <select id="posFilter" onchange="renderPortalTable()">
+        <option value="">All</option>
+        <option value="PG">PG</option><option value="SG">SG</option>
+        <option value="SF">SF</option><option value="PF">PF</option>
+        <option value="C">C</option>
+      </select></label>
+      <label>Sort: <select id="portalSort" onchange="renderPortalTable()">
+        <option value="pts">Pts/G</option>
+        <option value="bpm">BPM</option>
+        <option value="reb">Reb/G</option>
+        <option value="ast">Ast/G</option>
+        <option value="fgPct">FG%</option>
+        <option value="ts">TS%</option>
+        <option value="threePct">3P%</option>
+        <option value="ftPct">FT%</option>
+        <option value="min">Min/G</option>
+      </select></label>
+    </div>
+    <div class="table-wrap">
+      <table id="portalTable">
+        <thead>
+          <tr id="portalHead">
+            <th>Player</th>
+            <th onclick="sortPortal('pos')">Pos<span class="sort-icon">↕</span></th>
+            <th>School</th>
+            <th>Ht/Wt</th>
+            <th onclick="sortPortal('gp')">GP<span class="sort-icon">↕</span></th>
+            <th onclick="sortPortal('min')">Min<span class="sort-icon">↕</span></th>
+            <th onclick="sortPortal('pts')">Pts<span class="sort-icon">↕</span></th>
+            <th onclick="sortPortal('reb')">Reb<span class="sort-icon">↕</span></th>
+            <th onclick="sortPortal('ast')">Ast<span class="sort-icon">↕</span></th>
+            <th onclick="sortPortal('stl')">Stl<span class="sort-icon">↕</span></th>
+            <th onclick="sortPortal('blk')">Blk<span class="sort-icon">↕</span></th>
+            <th onclick="sortPortal('to')">TO<span class="sort-icon">↕</span></th>
+            <th>FGM-A</th>
+            <th onclick="sortPortal('fgPct')">FG%<span class="sort-icon">↕</span></th>
+            <th>3PM-A</th>
+            <th onclick="sortPortal('threePct')">3P%<span class="sort-icon">↕</span></th>
+            <th>FTM-A</th>
+            <th onclick="sortPortal('ftPct')">FT%<span class="sort-icon">↕</span></th>
+            <th onclick="sortPortal('ts')" title="True Shooting %">TS%<span class="sort-icon">↕</span></th>
+            <th onclick="sortPortal('efg')" title="Effective FG%">eFG%<span class="sort-icon">↕</span></th>
+            <th onclick="sortPortal('bpm')" title="Box Plus/Minus (Barttorvik)">BPM<span class="sort-icon">↕</span></th>
+            <th onclick="sortPortal('obpm')" title="Offensive Box Plus/Minus">OBPM<span class="sort-icon">↕</span></th>
+            <th onclick="sortPortal('dbpm')" title="Defensive Box Plus/Minus">DBPM<span class="sort-icon">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="portalBody"></tbody>
+      </table>
+    </div>
+    <p class="info-note" style="margin-top:10px">Stats from 2025-26 regular season via ESPN. BPM/OBPM/DBPM (Box Plus/Minus) via Barttorvik T-Rank — per-100-possession value added vs average D1. TS% = True Shooting %, eFG% = Effective FG%. Click any column header to sort.</p>
+  </div>
+</div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────
+const HCA = 3.5, CAP = 25, ITERS = 150;
+const SEASON_START = new Date('2025-11-01');
+const SEASON_END   = new Date(); // today
+
+// ── State ──────────────────────────────────────────────────────────────────
+let teams = {}, games = [], ranked = [], leagueAvgPts = 0;
+let sosRatings = {}, offSos = {}, defSos = {};
+let espnStats = {};
+let adjStats = {};
+let sortCol = 'sosRating', sortDir = -1;
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+function setLoad(msg, pct) {
+  document.getElementById('loadMsg').textContent = msg;
+  document.getElementById('loadPct').textContent = Math.round(pct) + '%';
+}
+
+function dateStr(d) {
+  return d.toISOString().slice(0,10).replace(/-/g,'');
+}
+
+function addDays(d, n) {
+  const r = new Date(d); r.setDate(r.getDate()+n); return r;
+}
+
+async function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+// ── 1. Fetch all games ─────────────────────────────────────────────────────
+async function fetchAllGames() {
+  const allGames = [];
+  const days = [];
+  let cur = new Date(SEASON_START);
+  while (cur <= SEASON_END) { days.push(new Date(cur)); cur = addDays(cur,1); }
+
+  const BATCH = 8;
+  for (let i = 0; i < days.length; i += BATCH) {
+    const batch = days.slice(i, i+BATCH);
+    const pct = (i / days.length) * 55;
+    setLoad(`Fetching games ${i+1}–${Math.min(i+BATCH, days.length)} of ${days.length} days…`, pct);
+
+    const results = await Promise.all(batch.map(async d => {
+      try {
+        const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=${dateStr(d)}&limit=400`;
+        const j = await fetch(url).then(r=>r.json());
+        return j.events || [];
+      } catch(e) { return []; }
+    }));
+
+    for (const evts of results) {
+      for (const ev of evts) {
+        const comp = ev.competitions?.[0];
+        if (!comp) continue;
+        const status = comp.status?.type?.name;
+        if (status !== 'STATUS_FINAL') continue;
+
+        const competitors = comp.competitors || [];
+        if (competitors.length !== 2) continue;
+
+        let home, away;
+        for (const c of competitors) {
+          if (c.homeAway === 'home') home = c;
+          else away = c;
+        }
+        if (!home || !away) continue;
+
+        const homeScore = parseInt(home.score, 10);
+        const awayScore = parseInt(away.score, 10);
+        if (isNaN(homeScore) || isNaN(awayScore)) continue;
+
+        const homeId = home.team?.id;
+        const awayId = away.team?.id;
+        if (!homeId || !awayId) continue;
+
+        const neutral = comp.neutralSite || false;
+
+        if (!teams[homeId]) teams[homeId] = {
+          id: homeId, name: home.team.shortDisplayName || home.team.displayName,
+          abbr: home.team.abbreviation, conf: home.team.conferenceId, w:0, l:0,
+          ptsFor:0, ptsAgainst:0, gp:0
+        };
+        if (!teams[awayId]) teams[awayId] = {
+          id: awayId, name: away.team.shortDisplayName || away.team.displayName,
+          abbr: away.team.abbreviation, conf: away.team.conferenceId, w:0, l:0,
+          ptsFor:0, ptsAgainst:0, gp:0
+        };
+
+        // Update record
+        if (homeScore > awayScore) { teams[homeId].w++; teams[awayId].l++; }
+        else { teams[awayId].w++; teams[homeId].l++; }
+        teams[homeId].ptsFor += homeScore; teams[homeId].ptsAgainst += awayScore; teams[homeId].gp++;
+        teams[awayId].ptsFor += awayScore; teams[awayId].ptsAgainst += homeScore; teams[awayId].gp++;
+
+        allGames.push({ homeId, awayId, homeScore, awayScore, neutral });
+      }
+    }
+    if (i + BATCH < days.length) await sleep(180);
+  }
+  return allGames;
+}
+
+// ── 2. Compute SOS ratings ─────────────────────────────────────────────────
+function computeSOS(gms) {
+  const teamIds = Object.keys(teams);
+  const sos = {}, off = {}, def = {};
+  teamIds.forEach(id => { sos[id]=0; off[id]=0; def[id]=0; });
+
+  // League avg pts
+  let totalPts=0, totalGames=0;
+  gms.forEach(g => { totalPts += g.homeScore + g.awayScore; totalGames++; });
+  leagueAvgPts = totalGames ? totalPts/totalGames/2 : 75;
+
+  // Build game lists per team
+  const gamesByTeam = {};
+  teamIds.forEach(id => gamesByTeam[id]=[]);
+  gms.forEach(g => {
+    const hAdj = g.neutral ? 0 : HCA/2;
+    const homeAdj = g.homeScore - hAdj;
+    const awayAdj = g.awayScore + hAdj;
+    gamesByTeam[g.homeId].push({ scored: homeAdj, allowed: awayAdj, opp: g.awayId, neutral: g.neutral });
+    gamesByTeam[g.awayId].push({ scored: awayAdj, allowed: homeAdj, opp: g.homeId, neutral: g.neutral });
+  });
+
+  // Overall SOS (Massey iteration)
+  for (let iter=0; iter<ITERS; iter++) {
+    const newSos = {};
+    for (const id of teamIds) {
+      const gl = gamesByTeam[id];
+      if (!gl.length) { newSos[id]=0; continue; }
+      let sum=0;
+      for (const g of gl) {
+        const rawDiff = g.scored - g.allowed;
+        const adj = g.neutral ? rawDiff : rawDiff;
+        const capped = Math.max(-CAP, Math.min(CAP, adj));
+        sum += capped + sos[g.opp];
+      }
+      newSos[id] = sum / gl.length;
+    }
+    // normalize
+    const vals = Object.values(newSos);
+    const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
+    for (const id of teamIds) sos[id] = newSos[id] - mean;
+  }
+
+  // Offensive SOS (team's points scored, corrected for opponent defense)
+  const offGames = {}, defGames = {};
+  teamIds.forEach(id => { offGames[id]=[]; defGames[id]=[]; });
+  gms.forEach(g => {
+    const hAdj = g.neutral ? 0 : HCA/2;
+    offGames[g.homeId].push({ pts: g.homeScore - hAdj, opp: g.awayId });
+    offGames[g.awayId].push({ pts: g.awayScore + hAdj, opp: g.homeId });
+    defGames[g.homeId].push({ allowed: g.awayScore + hAdj, opp: g.awayId });
+    defGames[g.awayId].push({ allowed: g.homeScore - hAdj, opp: g.homeId });
+  });
+
+  // Off ratings
+  for (const id of teamIds) {
+    const gl = offGames[id];
+    if (!gl.length) { off[id]=0; continue; }
+    let sum=0;
+    for (const g of gl) sum += (g.pts - leagueAvgPts) + (def[g.opp]||0);
+    off[id] = sum/gl.length;
+  }
+  // Def ratings
+  for (const id of teamIds) {
+    const gl = defGames[id];
+    if (!gl.length) { def[id]=0; continue; }
+    let sum=0;
+    for (const g of gl) sum += (leagueAvgPts - g.allowed) + (off[g.opp]||0);
+    def[id] = sum/gl.length;
+  }
+  // Run a few iterations to stabilize off/def
+  for (let iter=0; iter<20; iter++) {
+    const newOff={}, newDef={};
+    for (const id of teamIds) {
+      const ogl = offGames[id];
+      if (!ogl.length){newOff[id]=0;continue;}
+      let s=0; for (const g of ogl) s+=(g.pts-leagueAvgPts)+def[g.opp]; newOff[id]=s/ogl.length;
+    }
+    for (const id of teamIds) {
+      const dgl = defGames[id];
+      if (!dgl.length){newDef[id]=0;continue;}
+      let s=0; for (const g of dgl) s+=(leagueAvgPts-g.allowed)+off[g.opp]; newDef[id]=s/dgl.length;
+    }
+    const om=Object.values(newOff).reduce((a,b)=>a+b,0)/teamIds.length;
+    const dm=Object.values(newDef).reduce((a,b)=>a+b,0)/teamIds.length;
+    for (const id of teamIds){off[id]=newOff[id]-om; def[id]=newDef[id]-dm;}
+  }
+
+  // Compute offPct / defPct for each team
+  for (const id of teamIds) {
+    const t = teams[id];
+    const oAbs = Math.abs(off[id]), dAbs = Math.abs(def[id]);
+    const tot = oAbs + dAbs;
+    t.offPct = tot>0 ? Math.round(oAbs/tot*100) : 50;
+    t.defPct = tot>0 ? Math.round(dAbs/tot*100) : 50;
+    t.sosRating = Math.round(sos[id]*100)/100;
+    t.offRating = Math.round(off[id]*100)/100;
+    t.defRating = Math.round(def[id]*100)/100;
+    t.rawPts = t.gp ? Math.round(t.ptsFor/t.gp*10)/10 : 0;
+    t.rawAllowed = t.gp ? Math.round(t.ptsAgainst/t.gp*10)/10 : 0;
+    t.rawDiff = Math.round((t.rawPts - t.rawAllowed)*10)/10;
+  }
+
+  sosRatings = sos; offSos = off; defSos = def;
+}
+
+// ── 3. Fetch ESPN team stats ───────────────────────────────────────────────
+async function fetchTeamStats() {
+  setLoad('Fetching team statistics…', 78);
+  try {
+    const url = 'https://site.web.api.espn.com/apis/common/v3/sports/basketball/mens-college-basketball/statistics/byteam?season=2026&seasontype=2&limit=400';
+    const d = await fetch(url).then(r=>r.json());
+    const colDefs = d.categories || [];
+    const catDefByName = {};
+    colDefs.forEach(c => { if(c&&c.name) catDefByName[c.name]=c; });
+    const subCatMap = {
+      'Own General':'general','Own Defensive':'defensive',
+      'Own Offensive':'offensive','Own Differential':'differential'
+    };
+
+    for (const teamEntry of (d.teams||[])) {
+      const tid = teamEntry.team?.id;
+      if (!tid) continue;
+      const stats = {};
+      for (const tc of (teamEntry.categories||[])) {
+        const defName = subCatMap[tc.displayName];
+        if (!defName) continue;
+        const colDef = catDefByName[defName];
+        if (!colDef) continue;
+        const names = colDef.names || [];
+        const vals  = tc.totals || [];
+        for (let i=0;i<names.length;i++) {
+          if (names[i] && vals[i]!==undefined) stats[names[i]] = parseFloat(vals[i]);
+        }
+      }
+      // Note: ESPN's "Own Offensive" = what opponents do TO this team (defensive stats)
+      // avgPoints in Own Offensive = points allowed per game
+      espnStats[tid] = stats;
+    }
+  } catch(e) {
+    console.warn('Stats fetch failed:', e);
+  }
+}
+
+// ── 4. Compute competition-adjusted stats ─────────────────────────────────
+function computeAdjStats() {
+  setLoad('Computing competition-adjusted statistics…', 88);
+
+  // Build opponent lists per team (use game data)
+  const oppsByTeam = {};
+  for (const id of Object.keys(teams)) oppsByTeam[id]=[];
+  for (const g of games) {
+    oppsByTeam[g.homeId].push(g.awayId);
+    oppsByTeam[g.awayId].push(g.homeId);
+  }
+
+  // Compute raw stats from game data (points) + ESPN stats for everything else
+  const statKeys = ['fieldGoalPct','avgRebounds','avgTurnovers','avgAssists','avgSteals','avgBlocks','threePointFieldGoalPct'];
+  const leagueAvgStats = {};
+
+  // Compute league averages from ESPN stats
+  let counts = {};
+  statKeys.forEach(k=>{leagueAvgStats[k]=0; counts[k]=0;});
+  for (const [tid, stats] of Object.entries(espnStats)) {
+    for (const k of statKeys) {
+      if (stats[k] !== undefined && !isNaN(stats[k])) {
+        leagueAvgStats[k] += stats[k]; counts[k]++;
+      }
+    }
+  }
+  statKeys.forEach(k=>{ leagueAvgStats[k] = counts[k]>0 ? leagueAvgStats[k]/counts[k] : 0; });
+
+  for (const [tid, t] of Object.entries(teams)) {
+    if (!oppsByTeam[tid]?.length) continue;
+    const opps = oppsByTeam[tid];
+    const myStats = espnStats[tid] || {};
+    const adj = {};
+
+    // Points (from game data)
+    const oppAvgPts = opps.reduce((s,oid)=>{
+      const ot = teams[oid]; return s + (ot ? ot.rawPts : leagueAvgPts);
+    },0) / opps.length;
+    adj.adjPts = Math.round(((t.rawPts||leagueAvgPts) + (leagueAvgPts - oppAvgPts))*10)/10;
+
+    const oppAvgAllowed = opps.reduce((s,oid)=>{
+      const ot = teams[oid]; return s + (ot ? ot.rawAllowed : leagueAvgPts);
+    },0) / opps.length;
+    adj.adjAllowed = Math.round(((t.rawAllowed||leagueAvgPts) + (leagueAvgPts - oppAvgAllowed))*10)/10;
+
+    // ESPN stats
+    for (const k of statKeys) {
+      const lgAvg = leagueAvgStats[k];
+      const myRaw = myStats[k] !== undefined ? myStats[k] : lgAvg;
+      const oppAvg = opps.reduce((s,oid)=>{
+        const os = espnStats[oid]; return s + (os&&os[k]!==undefined ? os[k] : lgAvg);
+      },0) / opps.length;
+      adj['adj_'+k] = myRaw + (lgAvg - oppAvg);
+    }
+
+    // Opponent FG% (ESPN "Own Offensive" fieldGoalPct = opp FG% allowed)
+    const oppFgKey = 'fieldGoalPct'; // from Own Offensive = opp FG%
+    adj.adjOppFgPct = myStats[oppFgKey] !== undefined
+      ? Math.round((myStats[oppFgKey] + (leagueAvgStats[oppFgKey] - opps.reduce((s,oid)=>{
+          const os=espnStats[oid]; return s+(os&&os[oppFgKey]!==undefined?os[oppFgKey]:leagueAvgStats[oppFgKey]);
+        },0)/opps.length))*1000)/1000
+      : null;
+
+    // Clean up accessors
+    adj.adjFgPct = adj['adj_fieldGoalPct'];
+    adj.adjReb   = Math.round((adj['adj_avgRebounds']||0)*10)/10;
+    adj.adjTo    = Math.round((adj['adj_avgTurnovers']||0)*10)/10;
+    adj.adjAst   = Math.round((adj['adj_avgAssists']||0)*10)/10;
+    adj.adj3pt   = adj['adj_threePointFieldGoalPct'];
+
+    adjStats[tid] = adj;
+  }
+}
+
+// ── 5. Build ranked array ──────────────────────────────────────────────────
+function buildRanked() {
+  ranked = Object.values(teams)
+    .filter(t => t.gp >= 5)
+    .sort((a,b) => b.sosRating - a.sosRating);
+  ranked.forEach((t,i) => { t.rank = i+1; });
+}
+
+// ── 6. Populate UI ────────────────────────────────────────────────────────
+function populateConfs() {
+  const confs = [...new Set(ranked.map(t=>t.conf).filter(Boolean))].sort();
+  for (const el of [document.getElementById('confFilter'), document.getElementById('confFilter2')]) {
+    confs.forEach(c => { const o=document.createElement('option'); o.value=c; o.text=c; el.appendChild(o); });
+  }
+  // Init autocomplete for both team pickers
+  initAutocomplete('A');
+  initAutocomplete('B');
+}
+
+// ── Autocomplete ───────────────────────────────────────────────────────────
+const acState = { A: { id: null, focusIdx: -1 }, B: { id: null, focusIdx: -1 } };
+
+function initAutocomplete(side) {
+  const input = document.getElementById('acInput'+side);
+  const drop  = document.getElementById('acDrop'+side);
+  const wrap  = document.getElementById('acWrap'+side);
+
+  input.addEventListener('input', () => {
+    acState[side].id = null;
+    input.classList.remove('selected');
+    wrap.classList.remove('has-val');
+    renderAcDrop(side);
+  });
+
+  input.addEventListener('focus', () => renderAcDrop(side));
+
+  input.addEventListener('keydown', e => {
+    const items = drop.querySelectorAll('.ac-item');
+    if (!items.length) return;
+    if (e.key==='ArrowDown') {
+      e.preventDefault();
+      acState[side].focusIdx = Math.min(acState[side].focusIdx+1, items.length-1);
+      updateAcFocus(side);
+    } else if (e.key==='ArrowUp') {
+      e.preventDefault();
+      acState[side].focusIdx = Math.max(acState[side].focusIdx-1, 0);
+      updateAcFocus(side);
+    } else if (e.key==='Enter') {
+      e.preventDefault();
+      const fi = acState[side].focusIdx;
+      if (fi>=0 && items[fi]) items[fi].click();
+    } else if (e.key==='Escape') {
+      closeDrop(side);
+    }
+  });
+
+  // Close on outside click
+  document.addEventListener('click', e => {
+    if (!wrap.contains(e.target)) closeDrop(side);
+  });
+}
+
+function renderAcDrop(side) {
+  const input = document.getElementById('acInput'+side);
+  const drop  = document.getElementById('acDrop'+side);
+  const q = input.value.trim().toLowerCase();
+  acState[side].focusIdx = -1;
+
+  const sortedTeams = [...ranked].sort((a,b)=>a.name.localeCompare(b.name));
+  const matches = q
+    ? sortedTeams.filter(t =>
+        t.name.toLowerCase().includes(q) ||
+        (t.abbr||'').toLowerCase().includes(q) ||
+        (t.conf||'').toLowerCase().includes(q)
+      ).slice(0,12)
+    : sortedTeams.slice(0,10);
+
+  if (!matches.length) {
+    drop.innerHTML = '<div class="ac-no-results">No teams found</div>';
+  } else {
+    drop.innerHTML = matches.map(t => {
+      const hl = q ? t.name.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'),
+        '<b style="color:#4f8ef7">$1</b>') : t.name;
+      return `<div class="ac-item" data-id="${t.id}" data-name="${t.name}" onclick="selectTeam('${side}','${t.id}','${t.name.replace(/'/g,"\\'")}')">
+        <span class="ac-item-name">${hl}</span>
+        <span class="ac-item-meta">${t.conf||''} · #${t.rank}</span>
+      </div>`;
+    }).join('');
+  }
+  drop.classList.add('open');
+}
+
+function updateAcFocus(side) {
+  const drop = document.getElementById('acDrop'+side);
+  drop.querySelectorAll('.ac-item').forEach((el,i) => {
+    el.classList.toggle('focused', i===acState[side].focusIdx);
+    if (i===acState[side].focusIdx) el.scrollIntoView({block:'nearest'});
+  });
+}
+
+function selectTeam(side, id, name) {
+  acState[side].id = id;
+  const input = document.getElementById('acInput'+side);
+  const wrap  = document.getElementById('acWrap'+side);
+  input.value = name;
+  input.classList.add('selected');
+  wrap.classList.add('has-val');
+  closeDrop(side);
+}
+
+function clearTeam(side) {
+  acState[side].id = null;
+  const input = document.getElementById('acInput'+side);
+  const wrap  = document.getElementById('acWrap'+side);
+  input.value = '';
+  input.classList.remove('selected');
+  wrap.classList.remove('has-val');
+  document.getElementById('predResult').innerHTML='';
+  input.focus();
+}
+
+function closeDrop(side) {
+  document.getElementById('acDrop'+side).classList.remove('open');
+}
+
+function fmtRating(r) {
+  const s = r>0?'+':'-'; return s+Math.abs(r).toFixed(2);
+}
+
+function renderTable() {
+  const q = document.getElementById('srch').value.toLowerCase();
+  const cf = document.getElementById('confFilter').value;
+  const lim = parseInt(document.getElementById('limitSel').value) || 0;
+
+  let rows = [...ranked];
+  if (q) rows = rows.filter(t=>t.name.toLowerCase().includes(q)||t.abbr?.toLowerCase().includes(q));
+  if (cf) rows = rows.filter(t=>t.conf===cf);
+
+  // Sort
+  rows.sort((a,b) => {
+    const av = a[sortCol]??0, bv = b[sortCol]??0;
+    if (typeof av==='string') return sortDir*(av.localeCompare(bv));
+    return sortDir*(bv-av);
+  });
+  if (lim>0) rows=rows.slice(0,lim);
+
+  const maxOff = Math.max(...ranked.map(t=>t.offRating));
+  const maxDef = Math.max(...ranked.map(t=>t.defRating));
+
+  const tbody = document.getElementById('rankBody');
+  tbody.innerHTML = rows.map(t => {
+    const badge = t.rank<=3?'rank-badge top3':t.rank<=10?'rank-badge top10':'rank-badge';
+    const diffCls = t.rawDiff>=0?'pos-num':'neg-num';
+    const offW = maxOff>0?Math.round(t.offRating/maxOff*100):0;
+    const defW = maxDef>0?Math.round(t.defRating/maxDef*100):0;
+    return `<tr>
+      <td><span class="${badge}">${t.rank}</span></td>
+      <td><span class="team-name">${t.name}</span><span class="conf-badge">${t.conf||''}</span></td>
+      <td><b>${fmtRating(t.sosRating)}</b></td>
+      <td>${t.w}</td><td>${t.l}</td>
+      <td>${t.rawPts}</td><td>${t.rawAllowed}</td>
+      <td class="${diffCls}">${t.rawDiff>0?'+':''}${t.rawDiff}</td>
+      <td>${t.offPct}%</td>
+      <td>${t.defPct}%</td>
+      <td class="bar-cell"><div class="bar-wrap"><div class="bar-fill off" style="width:${offW}%"></div></div></td>
+      <td class="bar-cell"><div class="bar-wrap"><div class="bar-fill def" style="width:${defW}%"></div></div></td>
+    </tr>`;
+  }).join('');
+
+  // Update sort icons
+  document.querySelectorAll('#rankTable thead th').forEach(th => {
+    th.classList.remove('sorted');
+    const si = th.querySelector('.sort-icon');
+    if (si) si.textContent='↕';
+  });
+  // Find current sorted header (by onclick attr)
+  document.querySelectorAll('#rankTable thead th[onclick]').forEach(th => {
+    const col = th.getAttribute('onclick').match(/sortBy\('(.+?)'\)/)?.[1];
+    if (col===sortCol) {
+      th.classList.add('sorted');
+      const si = th.querySelector('.sort-icon');
+      if (si) si.textContent = sortDir>0?'↑':'↓';
+    }
+  });
+}
+
+function renderStatsTable() {
+  const q = document.getElementById('srch2').value.toLowerCase();
+  const cf = document.getElementById('confFilter2').value;
+  const sk = document.getElementById('statSort').value;
+
+  let rows = [...ranked];
+  if (q) rows=rows.filter(t=>t.name.toLowerCase().includes(q));
+  if (cf) rows=rows.filter(t=>t.conf===cf);
+  rows.sort((a,b)=>{
+    const ak=adjStats[a.id]?.[sk]??a[sk]??0;
+    const bk=adjStats[b.id]?.[sk]??b[sk]??0;
+    const rev=['adjTo','adjAllowed','adjOppFgPct'].includes(sk)?1:-1;
+    return rev*(ak-bk);
+  });
+
+  const tbody = document.getElementById('statsBody');
+  tbody.innerHTML = rows.slice(0,100).map((t,i)=>{
+    const adj = adjStats[t.id]||{};
+    const fmtPct = v=>v!=null?Math.round(v*1000)/10+'%':'–';
+    const fmtN = v=>v!=null?Math.round(v*10)/10:'–';
+    return `<tr>
+      <td>${i+1}</td>
+      <td><span class="team-name">${t.name}</span><span class="conf-badge">${t.conf||''}</span></td>
+      <td>${fmtRating(t.sosRating)}</td>
+      <td>${fmtN(adj.adjPts)}</td>
+      <td>${fmtN(adj.adjAllowed)}</td>
+      <td>${fmtPct(adj.adjFgPct)}</td>
+      <td>${fmtPct(adj.adjOppFgPct)}</td>
+      <td>${fmtN(adj.adjReb)}</td>
+      <td>${fmtN(adj.adjTo)}</td>
+      <td>${fmtN(adj.adjAst)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function sortBy(col) {
+  if (sortCol===col) sortDir*=-1;
+  else { sortCol=col; sortDir=-1; }
+  renderTable();
+}
+
+function switchTab(n) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===n-1));
+  document.querySelectorAll('.tab-pane').forEach((p,i)=>p.classList.toggle('active',i===n-1));
+  if(n===3){ renderPortalHero(); renderPortalTable(); }
+}
+
+function predict() {
+  const tAid = acState.A.id;
+  const tBid = acState.B.id;
+  const venue = document.getElementById('venue').value;
+  if (!tAid||!tBid||tAid===tBid) {
+    document.getElementById('predResult').innerHTML='<p style="color:#888;padding:12px">Select two different teams.</p>';
+    return;
+  }
+  const tA=teams[tAid], tB=teams[tBid];
+  const hca = venue==='AH'?HCA:venue==='BH'?-HCA:0;
+  const spread = Math.round((tA.sosRating - tB.sosRating + hca)*10)/10;
+  const LAP = leagueAvgPts;
+  const avgTotal = (LAP*2 + tA.rawPts + tB.rawPts) / 2;
+  const sA = Math.round(avgTotal/2 + spread/2);
+  const sB = Math.round(avgTotal/2 - spread/2);
+  const fav = spread>0?tA.name:spread<0?tB.name:'Even';
+  const favLine = Math.abs(spread).toFixed(1);
+
+  const venueLabel = venue==='AH'?`${tA.name} hosting`:venue==='BH'?`${tB.name} hosting`:'Neutral site';
+  const adjA=adjStats[tAid]||{}, adjB=adjStats[tBid]||{};
+  const fmtPct=v=>v!=null?Math.round(v*1000)/10+'%':'–';
+  const fmtN=v=>v!=null?Math.round(v*10)/10:'–';
+
+  const statDefs=[
+    {k:'adjPts',lbl:'Adj Pts/G',max:100,lo:false},
+    {k:'adjAllowed',lbl:'Adj Opp/G',max:100,lo:true},
+    {k:'adjFgPct',lbl:'FG%',max:0.6,lo:false,pct:true},
+    {k:'adjReb',lbl:'Reb/G',max:50,lo:false},
+    {k:'adjTo',lbl:'TO/G',max:20,lo:true},
+    {k:'adjAst',lbl:'Ast/G',max:25,lo:false},
+  ];
+
+  function statBar(adj, sk, max, lo, pct) {
+    const v=adj[sk]; if(v==null) return '';
+    const disp=pct?fmtPct(v):fmtN(v);
+    const w=Math.min(100,Math.round(Math.abs(v)/max*100));
+    const color=lo?(v<(pct?0.45:15)?'#22c55e':'#ef4444'):(v>(pct?0.45:15)?'#22c55e':'#4f8ef7');
+    return `<div class="stat-row"><span class="stat-label">${sk==='adjTo'?'<span style="color:#ef4444">'+sk+'</span>':sk}</span>
+    <div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:${w}%;background:${color}"></div></div>
+    <span class="stat-val">${disp}</span></div>`;
+  }
+
+  document.getElementById('predResult').innerHTML=`
+    <div class="result-box">
+      <div class="result-score">${tA.name} ${sA} – ${sB} ${tB.name}</div>
+      <div class="result-meta">${venueLabel} · Total: ${sA+sB}</div>
+      <div class="result-spread" style="color:${spread===0?'#888':spread>0?'#22c55e':'#ef4444'}">
+        ${spread===0?'Pick\'em':`${fav} -${favLine}`}
+      </div>
+    </div>
+    <div class="profiles">
+      <div class="profile-card">
+        <h3>${tA.name} <small style="color:#888;font-weight:400">${tA.w}-${tA.l}</small></h3>
+        <div class="off-def-split">
+          <div class="split-pct off"><div class="pct-num">${tA.offPct}%</div><div class="pct-lbl">OFFENSE</div></div>
+          <div class="split-pct def"><div class="pct-num">${tA.defPct}%</div><div class="pct-lbl">DEFENSE</div></div>
+        </div>
+        ${statDefs.map(s=>statBar(adjA,s.k,s.max,s.lo,s.pct)).join('')}
+      </div>
+      <div class="profile-card">
+        <h3>${tB.name} <small style="color:#888;font-weight:400">${tB.w}-${tB.l}</small></h3>
+        <div class="off-def-split">
+          <div class="split-pct off"><div class="pct-num">${tB.offPct}%</div><div class="pct-lbl">OFFENSE</div></div>
+          <div class="split-pct def"><div class="pct-num">${tB.defPct}%</div><div class="pct-lbl">DEFENSE</div></div>
+        </div>
+        ${statDefs.map(s=>statBar(adjB,s.k,s.max,s.lo,s.pct)).join('')}
+      </div>
+    </div>`;
+}
+
+// ── Transfer Portal Data (sourced 3/23/2026 — ESPN stats + Barttorvik BPM) ──
+// bpm/obpm/dbpm/ortg/drtg/efg/ts from Barttorvik T-Rank; all other stats from ESPN
+const PORTAL_PLAYERS = [
+  {name:"Stefan Vaaks",school:"Providence",pos:"SG",ht:"6-7",wt:"206",gp:31,min:31.5,pts:15.8,reb:2.5,oreb:0.5,dreb:2,ast:3.2,stl:0.8,blk:0.3,to:1.9,fgm:4.9,fga:12.3,fgPct:40.3,threePm:2.9,threePa:8.4,threePct:35,ftm:3,fta:3.6,ftPct:83.9,bpm:3.5,obpm:4.8,dbpm:-2,ortg:117.2,drtg:112.5,usg:23.4,efg:52.2,ts:56.7},
+  {name:"Drew Scharnowski",school:"Belmont",pos:"PF",ht:"6-9",wt:"230",gp:30,min:21.8,pts:10.7,reb:6,oreb:2.1,dreb:3.9,ast:2.6,stl:0.8,blk:1.3,to:1.8,fgm:4.3,fga:6.4,fgPct:68.1,threePm:0,threePa:0.2,threePct:20,ftm:2,fta:4.7,ftPct:43.6,bpm:6.4,obpm:3.4,dbpm:4.8,ortg:100,drtg:101.3,usg:25.7,efg:68.3,ts:62.5},
+  {name:"Tyler Lundblade",school:"Belmont",pos:"SG",ht:"6-5",wt:"195",gp:32,min:34.3,pts:15.6,reb:2.7,oreb:0.2,dreb:2.5,ast:1.8,stl:0.3,blk:0.1,to:0.9,fgm:4.7,fga:10.9,fgPct:43,threePm:3.6,threePa:8.8,threePct:40.6,ftm:2.7,fta:2.8,ftPct:93.4,bpm:1.8,obpm:4.7,dbpm:-3,ortg:112.6,drtg:114.3,usg:17.5,efg:59.7,ts:64},
+  {name:"Kwame Evans Jr.",school:"Oregon",pos:"PF",ht:"6-10",wt:"220",gp:30,min:30.9,pts:13.3,reb:7.4,oreb:2.2,dreb:5.3,ast:2,stl:1,blk:1.3,to:1.9,fgm:4.1,fga:9,fgPct:45.4,threePm:1,threePa:3.4,threePct:30.4,ftm:4.1,fta:5.1,ftPct:79.9,bpm:5.8,obpm:2.4,dbpm:3.9,ortg:107.3,drtg:100,usg:22.4,efg:51.1,ts:58.1},
+  {name:"DeSean Goode",school:"Robert Morris",pos:"PF",ht:"6-8",wt:"230",gp:33,min:30.9,pts:15.2,reb:8.7,oreb:3.2,dreb:5.5,ast:1.4,stl:0.8,blk:1,to:2.1,fgm:5.5,fga:10.6,fgPct:51.8,threePm:0.2,threePa:0.8,threePct:28.6,ftm:4,fta:5.9,ftPct:67.7,bpm:7.4,obpm:4.3,dbpm:3.8,ortg:113,drtg:106.8,usg:26.4,efg:52.7,ts:58.8},
+  {name:"Colby Garland",school:"San Jose State",pos:"PG",ht:"6-1",wt:"190",gp:31,min:33.4,pts:19.5,reb:3.6,oreb:0.5,dreb:3.1,ast:4.7,stl:1.4,blk:0.2,to:2.5,fgm:6.5,fga:15.1,fgPct:43.1,threePm:2.8,threePa:7.9,threePct:35.1,ftm:3.7,fta:4.4,ftPct:83.6,bpm:6.2,obpm:7.5,dbpm:-1.7,ortg:112.8,drtg:115.4,usg:30.7,efg:52.4,ts:57},
+  {name:"Corey Hadnot",school:"IPFW",pos:"SG",ht:"6-3",wt:"190",gp:30,min:31.2,pts:18.4,reb:4.8,oreb:0.9,dreb:3.9,ast:3.8,stl:1.5,blk:0.3,to:2.3,fgm:6.1,fga:14.2,fgPct:43,threePm:2.5,threePa:7,threePct:36,ftm:3.7,fta:4.6,ftPct:81.2,bpm:null,obpm:null,dbpm:null,ortg:null,drtg:null,usg:null,efg:null,ts:null},
+  {name:"A'lahn Sumler",school:"Charleston Southern",pos:"SG",ht:"6-4",wt:"200",gp:31,min:32.8,pts:20.3,reb:4.3,oreb:0.9,dreb:3.4,ast:3.1,stl:1.2,blk:0.3,to:2.4,fgm:6.8,fga:15.9,fgPct:42.9,threePm:2.6,threePa:7.2,threePct:35.8,ftm:4.1,fta:5.1,ftPct:80.2,bpm:null,obpm:null,dbpm:null,ortg:null,drtg:null,usg:null,efg:null,ts:null},
+  {name:"Eli Ellis",school:"South Carolina",pos:"PG",ht:"6-0",wt:"192",gp:33,min:32.8,pts:17.7,reb:3.5,oreb:0.5,dreb:3,ast:5.9,stl:1.2,blk:0.2,to:2.7,fgm:5.8,fga:13.5,fgPct:42.9,threePm:2.4,threePa:6.5,threePct:36.5,ftm:3.7,fta:4.5,ftPct:81.4,bpm:2.7,obpm:4.5,dbpm:-2.1,ortg:108.5,drtg:108.9,usg:27.1,efg:51.7,ts:56.7},
+  {name:"Jake Fiegen",school:"Cornell",pos:"SG",ht:"6-4",wt:"205",gp:27,min:34.7,pts:18.6,reb:4.2,oreb:0.6,dreb:3.6,ast:2.8,stl:1,blk:0.3,to:1.8,fgm:5.9,fga:13.1,fgPct:44.9,threePm:3.1,threePa:8,threePct:38.5,ftm:3.7,fta:4.3,ftPct:86.5,bpm:5.4,obpm:6.5,dbpm:-1.1,ortg:116.2,drtg:112.1,usg:28.4,efg:56.5,ts:61.7},
+  {name:"Mister Dean",school:"College of Charleston",pos:"SG",ht:"6-6",wt:"200",gp:31,min:34,pts:16.4,reb:5.5,oreb:0.8,dreb:4.7,ast:2.6,stl:1.4,blk:0.5,to:2.1,fgm:5.5,fga:12.5,fgPct:43.8,threePm:2.4,threePa:6.7,threePct:35.4,ftm:3,fta:3.7,ftPct:81.6,bpm:4.1,obpm:4.3,dbpm:-0.3,ortg:110.2,drtg:108.9,usg:25.3,efg:53.4,ts:57.9},
+  {name:"Davion Hill",school:"Ball State",pos:"SG",ht:"6-2",wt:"225",gp:33,min:35.5,pts:22.5,reb:4.3,oreb:0.5,dreb:3.8,ast:3.5,stl:1.3,blk:0.3,to:2.4,fgm:7.5,fga:17.2,fgPct:43.5,threePm:2.8,threePa:7.8,threePct:36,ftm:4.6,fta:5.7,ftPct:81.1,bpm:4.8,obpm:6.3,dbpm:-1.9,ortg:110.3,drtg:110.5,usg:30.9,efg:51.6,ts:56.7},
+  {name:"Jordan Frison",school:"Chattanooga",pos:"PG",ht:"6-0",wt:"170",gp:32,min:33.5,pts:18.1,reb:3.4,oreb:0.4,dreb:3,ast:5.4,stl:1.6,blk:0.1,to:2.5,fgm:5.8,fga:13.4,fgPct:43.5,threePm:2.9,threePa:7.7,threePct:37.5,ftm:3.5,fta:4.2,ftPct:82.9,bpm:5.3,obpm:6.8,dbpm:-1.9,ortg:111.9,drtg:111.4,usg:28.4,efg:54.4,ts:58.8},
+  {name:"Justyn Fernandez",school:"Delaware",pos:"SF",ht:"6-5",wt:"210",gp:33,min:33.8,pts:16.6,reb:6.3,oreb:1.5,dreb:4.8,ast:2.4,stl:1.2,blk:0.5,to:2.3,fgm:5.7,fga:13.1,fgPct:43.6,threePm:1.5,threePa:4.8,threePct:31.8,ftm:3.7,fta:5.2,ftPct:70.9,bpm:-3.2,obpm:-1.9,dbpm:-2.2,ortg:114.9,drtg:116.7,usg:25.9,efg:52.9,ts:57},
+  {name:"Deuce Jones",school:"Saint Joseph's",pos:"PG",ht:"6-2",wt:"185",gp:null,min:null,pts:null,reb:null,oreb:null,dreb:null,ast:null,stl:null,blk:null,to:null,fgm:null,fga:null,fgPct:null,threePm:null,threePa:null,threePct:null,ftm:null,fta:null,ftPct:null,bpm:null,obpm:null,dbpm:null,ortg:null,drtg:null,usg:null,efg:null,ts:null},
+  {name:"Roddie Anderson III",school:"Xavier",pos:"SG",ht:"6-3",wt:"190",gp:33,min:23.8,pts:10.9,reb:3.3,oreb:0.6,dreb:2.8,ast:2.2,stl:1.3,blk:0.2,to:1.3,fgm:3.9,fga:9.8,fgPct:39.8,threePm:1.2,threePa:3.7,threePct:31.4,ftm:2,fta:2.7,ftPct:72.2,bpm:0.7,obpm:1.1,dbpm:-0.4,ortg:110.8,drtg:105.9,usg:24.9,efg:45.7,ts:49.2},
+  {name:"Tameron Ferguson",school:"Arkansas State",pos:"SG",ht:"6-2",wt:"170",gp:null,min:null,pts:null,reb:null,oreb:null,dreb:null,ast:null,stl:null,blk:null,to:null,fgm:null,fga:null,fgPct:null,threePm:null,threePa:null,threePct:null,ftm:null,fta:null,ftPct:null,bpm:null,obpm:null,dbpm:null,ortg:null,drtg:null,usg:null,efg:null,ts:null},
+  {name:"Rob Dockery",school:"La Salle",pos:"SF",ht:"6-6",wt:"215",gp:32,min:27.1,pts:12.5,reb:6.1,oreb:2,dreb:4.2,ast:2.3,stl:1.5,blk:0.3,to:2.9,fgm:4.1,fga:9.5,fgPct:43.1,threePm:1.3,threePa:4,threePct:32,ftm:3,fta:4,ftPct:74.4,bpm:2.7,obpm:1.5,dbpm:2.3,ortg:108.6,drtg:106.9,usg:26.5,efg:51.2,ts:58.1},
+  {name:"BJ Omot",school:"Minnesota",pos:"SF",ht:"6-8",wt:"200",gp:35,min:25.3,pts:9.2,reb:4.3,oreb:1.1,dreb:3.2,ast:1.3,stl:0.8,blk:0.5,to:1.1,fgm:3.3,fga:6.8,fgPct:48.2,threePm:0.9,threePa:2.8,threePct:30.9,ftm:1.8,fta:2.3,ftPct:77.5,bpm:null,obpm:null,dbpm:null,ortg:null,drtg:null,usg:null,efg:null,ts:null},
+  {name:"Caden Pierce",school:"Princeton",pos:"PF",ht:"6-6",wt:"220",gp:null,min:null,pts:null,reb:null,oreb:null,dreb:null,ast:null,stl:null,blk:null,to:null,fgm:null,fga:null,fgPct:null,threePm:null,threePa:null,threePct:null,ftm:null,fta:null,ftPct:null,bpm:null,obpm:null,dbpm:null,ortg:null,drtg:null,usg:null,efg:null,ts:null},
+  {name:"Jamie Kaiser",school:"Butler",pos:"SF",ht:"6-6",wt:"205",gp:32,min:28.1,pts:11.8,reb:5.1,oreb:1.1,dreb:4,ast:1.8,stl:0.9,blk:0.5,to:1.4,fgm:4.2,fga:9.3,fgPct:45.6,threePm:1.5,threePa:4.4,threePct:34.7,ftm:1.9,fta:2.4,ftPct:77.8,bpm:null,obpm:null,dbpm:null,ortg:null,drtg:null,usg:null,efg:null,ts:null},
+  {name:"Darin Smith Jr.",school:"CCSU",pos:"PF",ht:"6-7",wt:"210",gp:31,min:32.1,pts:17.3,reb:7.6,oreb:2.3,dreb:5.3,ast:1.8,stl:0.8,blk:1.1,to:2.1,fgm:6.2,fga:12.1,fgPct:51.3,threePm:0.5,threePa:1.8,threePct:29.6,ftm:4.4,fta:5.9,ftPct:74.8,bpm:null,obpm:null,dbpm:null,ortg:null,drtg:null,usg:null,efg:null,ts:null},
+  {name:"All Wright",school:"Xavier",pos:"SG",ht:"6-3",wt:"190",gp:33,min:21.5,pts:8.5,reb:2.4,oreb:0.4,dreb:2,ast:2.4,stl:0.8,blk:0.1,to:1.1,fgm:2.9,fga:7.3,fgPct:39.4,threePm:1.5,threePa:4.4,threePct:33.6,ftm:1.3,fta:1.6,ftPct:80.4,bpm:0.5,obpm:1.1,dbpm:-0.7,ortg:108.4,drtg:105.5,usg:18.8,efg:49.6,ts:53.2},
+  {name:"Eric Dibami",school:"FIU",pos:"PF",ht:"6-10",wt:"240",gp:31,min:26.4,pts:12.3,reb:7.3,oreb:2.5,dreb:4.8,ast:0.8,stl:0.5,blk:1.4,to:1.5,fgm:4.6,fga:8.5,fgPct:54.6,threePm:0,threePa:0.1,threePct:0,ftm:3,fta:4.6,ftPct:65.5,bpm:4.5,obpm:2.3,dbpm:2.3,ortg:110.8,drtg:108.7,usg:22.5,efg:54.9,ts:60.6},
+  {name:"Isaac Taveras",school:"Southern Miss",pos:"SF",ht:"6-4",wt:"175",gp:31,min:32.7,pts:14.9,reb:5,oreb:0.9,dreb:4.1,ast:2.5,stl:1.1,blk:0.4,to:1.8,fgm:5.2,fga:11.3,fgPct:45.8,threePm:1.7,threePa:5,threePct:33.5,ftm:2.8,fta:3.5,ftPct:81,bpm:2.3,obpm:3.1,dbpm:-1,ortg:109.5,drtg:111.3,usg:25,efg:53.1,ts:57.5},
+  {name:"Daquan Davis",school:"Providence",pos:"PG",ht:"6-1",wt:"185",gp:31,min:28.5,pts:12.8,reb:3.1,oreb:0.4,dreb:2.7,ast:5.1,stl:1.2,blk:0.1,to:2.1,fgm:4.3,fga:10.5,fgPct:41.1,threePm:2.1,threePa:5.9,threePct:35.2,ftm:2.2,fta:2.8,ftPct:77.4,bpm:3.1,obpm:4.3,dbpm:-1.4,ortg:109.8,drtg:112.6,usg:24.8,efg:51.1,ts:55.4},
+  {name:"Jordan Ellerbee",school:"FGCU",pos:"SG",ht:"6-2",wt:"175",gp:32,min:29.8,pts:14.1,reb:3.3,oreb:0.5,dreb:2.8,ast:3.8,stl:1.1,blk:0.1,to:1.9,fgm:4.6,fga:11.2,fgPct:41.5,threePm:2.4,threePa:6.8,threePct:34.7,ftm:2.5,fta:3.1,ftPct:79.6,bpm:2.3,obpm:3.4,dbpm:-1.3,ortg:108.4,drtg:110.5,usg:25.4,efg:52.3,ts:56.3},
+  {name:"Jahki Howard",school:"Utah",pos:"SF",ht:"6-7",wt:"195",gp:null,min:null,pts:null,reb:null,oreb:null,dreb:null,ast:null,stl:null,blk:null,to:null,fgm:null,fga:null,fgPct:null,threePm:null,threePa:null,threePct:null,ftm:null,fta:null,ftPct:null,bpm:2.7,obpm:1.5,dbpm:1.1,ortg:109.3,drtg:108.2,usg:21.8,efg:54.1,ts:58.4},
+  {name:"Nils Machowski",school:"Wofford",pos:"SG",ht:"6-3",wt:"183",gp:31,min:33.1,pts:17.2,reb:3.2,oreb:0.4,dreb:2.8,ast:3.1,stl:1.2,blk:0.1,to:1.6,fgm:5.6,fga:13.4,fgPct:42,threePm:2.9,threePa:7.8,threePct:37.6,ftm:3.1,fta:3.6,ftPct:86.1,bpm:3.8,obpm:4.9,dbpm:-1.2,ortg:111.6,drtg:112.8,usg:25.8,efg:53.7,ts:58}
+];
+
+// ── Portal Rendering ────────────────────────────────────────────────────────
+function renderPortalHero() {
+  const withStats = PORTAL_PLAYERS.filter(p=>p.gp);
+  const avgPts = withStats.reduce((s,p)=>s+p.pts,0)/withStats.length;
+  const avgReb = withStats.reduce((s,p)=>s+p.reb,0)/withStats.length;
+  const avgAst = withStats.reduce((s,p)=>s+p.ast,0)/withStats.length;
+  const avgFg  = withStats.reduce((s,p)=>s+(p.fgPct||0),0)/withStats.length;
+  const hero = document.getElementById('portalHero');
+  hero.innerHTML = [
+    {val: PORTAL_PLAYERS.length, lbl:'In Portal'},
+    {val: Math.round(avgPts*10)/10, lbl:'Avg Pts/G'},
+    {val: Math.round(avgReb*10)/10, lbl:'Avg Reb/G'},
+    {val: Math.round(avgAst*10)/10, lbl:'Avg Ast/G'},
+    {val: Math.round(avgFg*10)/10+'%', lbl:'Avg FG%'},
+  ].map(c=>`<div class="portal-stat-card"><div class="val">${c.val}</div><div class="lbl">${c.lbl}</div></div>`).join('');
+}
+
+let portalSortCol = 'pts', portalSortDir = -1;
+
+function sortPortal(col) {
+  if(portalSortCol === col) {
+    portalSortDir *= -1;
+  } else {
+    portalSortCol = col;
+    portalSortDir = col === 'to' ? 1 : -1;
+  }
+  document.getElementById('portalSort').value = col;
+  renderPortalTable();
+}
+
+function renderPortalTable() {
+  const q   = (document.getElementById('srchPortal').value||'').toLowerCase();
+  const pos = document.getElementById('posFilter').value;
+  const sk  = document.getElementById('portalSort').value;
+
+  // Sync sort state if changed via dropdown
+  if(sk !== portalSortCol) {
+    portalSortCol = sk;
+    portalSortDir = sk === 'to' ? 1 : -1;
+  }
+
+  let rows = [...PORTAL_PLAYERS];
+  if(q) rows = rows.filter(p=>p.name.toLowerCase().includes(q)||p.school.toLowerCase().includes(q));
+  if(pos) rows = rows.filter(p=>p.pos===pos);
+
+  rows.sort((a,b) => {
+    const av = a[portalSortCol]??( portalSortDir>0 ? Infinity : -Infinity );
+    const bv = b[portalSortCol]??( portalSortDir>0 ? Infinity : -Infinity );
+    return portalSortDir > 0 ? av - bv : bv - av;
+  });
+
+  // Update header highlight
+  document.querySelectorAll('#portalHead th').forEach(th => {
+    const oc = th.getAttribute('onclick');
+    const col = oc ? oc.match(/sortPortal\('(\w+)'\)/)?.[1] : null;
+    th.classList.toggle('sorted', col === portalSortCol);
+    const icon = th.querySelector('.sort-icon');
+    if(icon && col === portalSortCol) icon.textContent = portalSortDir > 0 ? '↑' : '↓';
+    else if(icon) icon.textContent = '↕';
+  });
+
+  function fmtBpm(v) {
+    if(v==null) return '<span style="color:#444">–</span>';
+    const s = v.toFixed(1);
+    if(v>0) return `<span class="pm-pos">+${s}</span>`;
+    if(v<0) return `<span class="pm-neg">${s}</span>`;
+    return `<span style="color:#888">0.0</span>`;
+  }
+  function n(v,dec=1) { return v!=null ? v.toFixed(dec) : '<span style="color:#444">–</span>'; }
+  function pct(v) { return v!=null ? v.toFixed(1)+'%' : '<span style="color:#444">–</span>'; }
+
+  const tbody = document.getElementById('portalBody');
+  tbody.innerHTML = rows.map(p => `<tr>
+    <td><span class="team-name">${p.name}</span></td>
+    <td><span class="conf-badge" style="font-size:12px;color:#aaa">${p.pos}</span></td>
+    <td>${p.school}</td>
+    <td style="color:#666;font-size:12px">${p.ht} / ${p.wt}</td>
+    <td>${p.gp??'–'}</td>
+    <td>${n(p.min)}</td>
+    <td><b>${n(p.pts)}</b></td>
+    <td>${n(p.reb)}</td>
+    <td>${n(p.ast)}</td>
+    <td>${n(p.stl)}</td>
+    <td>${n(p.blk)}</td>
+    <td style="color:#ef4444">${n(p.to)}</td>
+    <td style="font-size:12px;color:#888">${n(p.fgm)}-${n(p.fga)}</td>
+    <td>${pct(p.fgPct)}</td>
+    <td style="font-size:12px;color:#888">${n(p.threePm)}-${n(p.threePa)}</td>
+    <td>${pct(p.threePct)}</td>
+    <td style="font-size:12px;color:#888">${n(p.ftm)}-${n(p.fta)}</td>
+    <td>${pct(p.ftPct)}</td>
+    <td>${pct(p.ts)}</td>
+    <td>${pct(p.efg)}</td>
+    <td>${fmtBpm(p.bpm)}</td>
+    <td>${fmtBpm(p.obpm)}</td>
+    <td>${fmtBpm(p.dbpm)}</td>
+  </tr>`).join('');
+}
+
+// ── Main ───────────────────────────────────────────────────────────────────
+(async function main() {
+  try {
+    games = await fetchAllGames();
+    setLoad('Computing power ratings…', 57);
+    computeSOS(games);
+    await fetchTeamStats();
+    computeAdjStats();
+    buildRanked();
+
+    setLoad('Rendering…', 97);
+    document.getElementById('gameCount').textContent = games.length.toLocaleString();
+    document.getElementById('teamCount').textContent = ranked.length.toLocaleString();
+
+    populateConfs();
+    renderTable();
+    renderStatsTable();
+    renderPortalHero();
+    renderPortalTable();
+
+    document.getElementById('loading').style.display='none';
+    document.getElementById('app').style.display='block';
+  } catch(e) {
+    document.getElementById('loadMsg').textContent='Error: '+e.message;
+    console.error(e);
+  }
+})();
+</script>
+</body>
+</html>
